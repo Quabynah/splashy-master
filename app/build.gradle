@@ -1,0 +1,70 @@
+apply plugin: 'com.android.application'
+
+// query git for the SHA, Tag and commit count. Use these to automate versioning.
+final def gitSha = 'git rev-parse --short HEAD'.execute([], project.rootDir).text.trim()
+final def gitTag = 'git describe --tags'.execute([], project.rootDir).text.trim()
+final
+def gitCommitCount = Integer.parseInt('git rev-list --count HEAD'.execute([], project.rootDir).text.trim())
+
+android {
+    compileSdkVersion versions.compileSdk
+    defaultConfig {
+        applicationId "io.splashy"
+        archivesBaseName  = "splashy"
+        minSdkVersion versions.minSdk
+        targetSdkVersion versions.targetSdk
+        versionCode versions.versionCode
+        versionName versions.versionName
+        multiDexEnabled true
+        resConfigs "auto"
+
+        buildConfigField "String", "GIT_SHA", "\"${gitSha}\""
+        buildConfigField "String", "GIT_TAG", "\"${gitTag}\""
+        buildConfigField "String", "GIT_COMMIT_COUNT", "\"${gitCommitCount}\""
+
+        final def filesAuthorityValue = applicationId + ".shareprovider"
+        buildConfigField "String", "FILES_AUTHORITY", "\"${filesAuthorityValue}\""
+        manifestPlaceholders = [filesAuthority: filesAuthorityValue]
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            versionNameSuffix '-debug'
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            versionNameSuffix '-beta'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    lintOptions {
+        abortOnError true
+        check 'NewApi', 'InlinedApi'
+        fatal 'NewApi', 'InlinedApi'
+        enable 'UnusedResources'
+        checkReleaseBuilds true
+        textReport false
+        textOutput 'stdout'
+        htmlReport true
+        xmlReport true
+    }
+    packagingOptions {
+        exclude 'LICENSE.txt'
+    }
+
+}
+
+dependencies {
+    //multidex
+    implementation 'com.android.support:multidex:1.0.3'
+    implementation project(':feature')
+    implementation project(':base')
+}
